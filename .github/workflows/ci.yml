@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  qualite:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Vérifier le lint
+        run: npm run lint -- --max-warnings=0
+
+      - name: Exécuter les tests
+        run: npm test
+
+      - name: Vérifier la couverture de src/devis
+        run: node --test --experimental-test-coverage --test-coverage-include='src/devis/**' --test-coverage-lines=80 --test-coverage-branches=80
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Installer Gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz -o /tmp/gitleaks.tar.gz
+          sudo tar -xz -f /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
+
+      - name: Rechercher les secrets
+        run: gitleaks git -v --no-banner --redact --log-opts="HEAD" .
+
+  revue-ia:
+    if: github.event_name == 'pull_request'
+    needs: [qualite, secrets]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
+    steps:
+      - name: Ignorer la revue IA sans jeton
+        if: env.COPILOT_GITHUB_TOKEN == ''
+        run: echo "::notice::revue IA sautée"
+
+      - name: Checkout complet
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurer Node.js
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Installer GitHub Copilot CLI
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        run: npm install -g @github/copilot
+
+      - name: Préparer le prompt avec le diff
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        run: |
+          cat .github/prompts/revue-pr.txt > /tmp/revue-pr-complet.txt
+          printf '\n\n--- Diff de la PR ---\n' >> /tmp/revue-pr-complet.txt
+          gh pr diff "$PR_URL" >> /tmp/revue-pr-complet.txt
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+
+      - name: Générer la revue IA
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        id: inference
+        uses: actions/ai-inference@v3
+        with:
+          prompt-file: /tmp/revue-pr-complet.txt
+          model: ''
+
+      - name: Publier la revue en commentaire
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        run: gh pr comment "$PR_URL" --body-file "$RESPONSE_FILE"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          RESPONSE_FILE: ${{ steps.inference.outputs.response-file }}

@@ -1,100 +1,104 @@
 // Export comptable des commandes, lancé chaque nuit par le cabinet comptable.
 // Ne pas toucher : ça marche. (JM, 2021)
-var TVA = 0.2;
+const TVA = 0.2;
 
 function requete(db, sql, params, cb) {
-  setImmediate(function () {
-    var resultat;
+  setImmediate(() => {
+    let resultat;
     try {
-      var stmt = db.prepare(sql);
-      resultat = stmt.all.apply(stmt, params);
-    } catch (e) {
-      cb(e);
+      const stmt = db.prepare(sql);
+      resultat = stmt.all(...params);
+    } catch (erreur) {
+      cb(erreur);
       return;
     }
     cb(null, resultat);
   });
 }
 
+function trouverClient(clients, clientId) {
+  let clientTrouve = null;
+  for (let index = 0; index < clients.length; index++) {
+    if (clients[index].id === clientId) {
+      clientTrouve = clients[index];
+    }
+  }
+  return clientTrouve;
+}
+
+function calculerLignesCommande(lignes, commandeId) {
+  let nombreLignes = 0;
+  let totalHt = 0;
+  for (let index = 0; index < lignes.length; index++) {
+    if (lignes[index].commande_id === commandeId) {
+      nombreLignes++;
+      totalHt += lignes[index].quantite * lignes[index].prix_unitaire;
+    }
+  }
+  return { nombreLignes, totalHt };
+}
+
+function formaterMontant(montant) {
+  const arrondi = Math.round(montant * 100) / 100;
+  let texte = String(arrondi);
+  if (texte.indexOf('.') === -1) {
+    return texte + ',00';
+  }
+  const parties = texte.split('.');
+  if (parties[1].length === 1) {
+    parties[1] += '0';
+  }
+  texte = parties[0] + ',' + parties[1];
+  return texte;
+}
+
+function ajouterClientActif(clientsActifs, clientId) {
+  for (let index = 0; index < clientsActifs.length; index++) {
+    if (clientsActifs[index] === clientId) {
+      return;
+    }
+  }
+  clientsActifs.push(clientId);
+}
+
+function nettoyerChampCsv(valeur) {
+  return valeur.indexOf(';') === -1 ? valeur : valeur.replace(/;/g, ',');
+}
+
 function exporterCommandes(db, depuis, callback) {
-  var csv = 'numero;date;client;ville;nb_lignes;total_ht;total_ttc\n';
-  requete(db, 'SELECT * FROM commandes WHERE date >= ? ORDER BY date, id', [depuis], function (err, commandes) {
+  let csv = 'numero;date;client;ville;nb_lignes;total_ht;total_ttc\n';
+  requete(db, 'SELECT * FROM commandes WHERE date >= ? ORDER BY date, id', [depuis], (err, commandes) => {
     if (err) {
       callback(err);
       return;
     }
-    requete(db, 'SELECT * FROM lignes_commande', [], function (err2, lignes) {
+    requete(db, 'SELECT * FROM lignes_commande', [], (err2, lignes) => {
       if (err2) {
         callback(err2);
         return;
       }
-      requete(db, 'SELECT * FROM clients', [], function (err3, clients) {
+      requete(db, 'SELECT * FROM clients', [], (err3, clients) => {
         if (err3) {
           callback(err3);
           return;
         }
-        var actifs = [];
-        for (var i = 0; i < commandes.length; i++) {
-          var c = commandes[i];
-          var cl = null;
-          for (var k = 0; k < clients.length; k++) {
-            if (clients[k].id == c.client_id) {
-              cl = clients[k];
-            }
-          }
-          var nb = 0;
-          var tot = 0;
-          for (var j = 0; j < lignes.length; j++) {
-            if (lignes[j].commande_id == c.id) {
-              nb = nb + 1;
-              tot = tot + lignes[j].quantite * lignes[j].prix_unitaire;
-            }
-          }
-          if (c.statut == 'annulee') {
+        const clientsActifs = [];
+        for (let index = 0; index < commandes.length; index++) {
+          const commande = commandes[index];
+          if (commande.statut === 'annulee') {
             continue;
           }
-          var ht = Math.round(tot * 100) / 100;
-          var htTxt = String(ht);
-          if (htTxt.indexOf('.') == -1) {
-            htTxt = htTxt + ',00';
-          } else {
-            var p = htTxt.split('.');
-            if (p[1].length == 1) {
-              p[1] = p[1] + '0';
-            }
-            htTxt = p[0] + ',' + p[1];
-          }
-          var ttc = Math.round(tot * (1 + TVA) * 100) / 100;
-          var ttcTxt = String(ttc);
-          if (ttcTxt.indexOf('.') == -1) {
-            ttcTxt = ttcTxt + ',00';
-          } else {
-            var q = ttcTxt.split('.');
-            if (q[1].length == 1) {
-              q[1] = q[1] + '0';
-            }
-            ttcTxt = q[0] + ',' + q[1];
-          }
-          var nom = cl ? cl.nom : 'INCONNU';
-          if (nom.indexOf(';') != -1) {
-            nom = nom.replace(/;/g, ',');
-          }
-          var ville = cl ? cl.ville : '';
-          if (ville.indexOf(';') != -1) {
-            ville = ville.replace(/;/g, ',');
-          }
-          csv = csv + c.id + ';' + c.date + ';' + nom + ';' + ville + ';' + nb + ';' + htTxt + ';' + ttcTxt + '\n';
-          var deja = false;
-          for (var m = 0; m < actifs.length; m++) {
-            if (actifs[m] == c.client_id) {
-              deja = true;
-            }
-          }
-          if (!deja) {
-            actifs.push(c.client_id);
-          }
+          const client = trouverClient(clients, commande.client_id);
+          const lignesCommande = calculerLignesCommande(lignes, commande.id);
+          const nom = nettoyerChampCsv(client ? client.nom : 'INCONNU');
+          const ville = nettoyerChampCsv(client ? client.ville : '');
+          const totalTtc = lignesCommande.totalHt * (1 + TVA);
+          csv += commande.id + ';' + commande.date + ';' + nom + ';' + ville + ';'
+            + lignesCommande.nombreLignes + ';' + formaterMontant(lignesCommande.totalHt) + ';'
+            + formaterMontant(totalTtc) + '\n';
+          ajouterClientActif(clientsActifs, commande.client_id);
         }
-        csv = csv + '# clients actifs;' + actifs.length + '\n';
+        csv += '# clients actifs;' + clientsActifs.length + '\n';
         callback(null, csv);
       });
     });

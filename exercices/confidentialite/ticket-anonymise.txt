@@ -1,1 +1,16 @@
-À compléter pendant l’exercice : collez ici le ticket, puis anonymisez-le.
+Ticket support n° 4127, reçu le 3 mars 2026
+De : [CONTACT] <[EMAIL]>
+Société : [SOCIÉTÉ], [ADRESSE]
+Numéro client : [NUMÉRO CLIENT]
+Objet : remise absente sur le devis D-2026-0412
+
+Bonjour,
+
+Sur le devis D-2026-0412, nous avons commandé 10 boîtes de vis inox 6x60
+(référence VIS-INOX-6X60) à 18,90 € HT la boîte. Aucune remise n'apparaît,
+alors que vos conditions annoncent 5 % à partir de 10 unités.
+Pouvez-vous corriger le devis ?
+
+Cordialement,
+[CONTACT]
+Responsable achats, [SOCIÉTÉ]
