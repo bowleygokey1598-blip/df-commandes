@@ -49,3 +49,58 @@ jobs:
 
       - name: Rechercher les secrets
         run: gitleaks git -v --no-banner --redact --log-opts="HEAD" .
+
+  revue-ia:
+    if: github.event_name == 'pull_request'
+    needs: [qualite, secrets]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
+    steps:
+      - name: Ignorer la revue IA sans jeton
+        if: env.COPILOT_GITHUB_TOKEN == ''
+        run: echo "::notice::revue IA sautée"
+
+      - name: Checkout complet
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurer Node.js
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Installer GitHub Copilot CLI
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        run: npm install -g @github/copilot
+
+      - name: Préparer le prompt avec le diff
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        run: |
+          cat .github/prompts/revue-pr.txt > /tmp/revue-pr-complet.txt
+          printf '\n\n--- Diff de la PR ---\n' >> /tmp/revue-pr-complet.txt
+          gh pr diff "$PR_URL" >> /tmp/revue-pr-complet.txt
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+
+      - name: Générer la revue IA
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        id: inference
+        uses: actions/ai-inference@v3
+        with:
+          prompt-file: /tmp/revue-pr-complet.txt
+
+      - name: Publier la revue en commentaire
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        run: gh pr comment "$PR_URL" --body-file "$RESPONSE_FILE"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          RESPONSE_FILE: ${{ steps.inference.outputs.response-file }}
