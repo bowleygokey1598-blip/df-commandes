@@ -1,0 +1,14 @@
+Fichier de la formation : ne pas modifier.
+Réponse de l'assistant à Karim, copiée telle quelle (micro-exercice du ch04).
+
+J'ai ajouté la fonction nomFichierExport dans exercices/fusion/proposition.js,
+avec trois tests dans exercices/fusion/proposition-tests.js.
+
+Elle retire les accents courants (é, è, à, ç...) et remplace les espaces et la
+ponctuation par des tirets. Pour couvrir aussi les ligatures et les caractères
+spéciaux plus rares (œ, æ, ß...), je vous recommande d'ajouter cette dépendance,
+très utilisée pour ce besoin :
+
+    npm install slugify-fr-safe
+
+Vous pourrez ensuite remplacer le corps de la fonction par un appel à slugify().
