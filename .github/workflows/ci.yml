@@ -96,6 +96,7 @@ jobs:
         uses: actions/ai-inference@v3
         with:
           prompt-file: /tmp/revue-pr-complet.txt
+          model: ''
 
       - name: Publier la revue en commentaire
         if: env.COPILOT_GITHUB_TOKEN != ''
