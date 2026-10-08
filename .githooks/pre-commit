@@ -1,2 +1,2 @@
 #!/bin/sh
-# À compléter pendant l'exercice.
+exec gitleaks git -v --pre-commit --staged --no-banner --redact
