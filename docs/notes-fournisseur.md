@@ -10,7 +10,6 @@ Notes transmises par le service achats de Delmas & Fournier pour l’intégratio
 | `NEG` | Prix négocié annuel, révisé chaque 1er janvier |
 | `PROMO` | Prix promotionnel, valable jusqu’à la date indiquée dans le fichier |
 
-
 ## Fréquence des mises à jour
 
 - Fichier complet chaque lundi à 6 h.

@@ -5,7 +5,6 @@
   "description": "API de devis et de commandes de Delmas & Fournier, maintenue par Néotis",
   "main": "src/server.js",
   "scripts": {
-    "prepare": "git config core.hooksPath .githooks",
     "start": "node --disable-warning=ExperimentalWarning src/server.js",
     "test": "node --disable-warning=ExperimentalWarning --test",
     "test:couverture": "node --disable-warning=ExperimentalWarning --test --experimental-test-coverage --test-coverage-include=src/**",
@@ -31,7 +30,8 @@
     "failles": "node scripts/verifier.js failles",
     "consigne": "node scripts/verifier.js consigne",
     "lint": "eslint .",
-    "start:local": "node --disable-warning=ExperimentalWarning --env-file=.env src/server.js"
+    "start:local": "node --disable-warning=ExperimentalWarning --env-file=.env src/server.js",
+    "prepare": "git config core.hooksPath .githooks"
   },
   "engines": {
     "node": ">=22.13"
