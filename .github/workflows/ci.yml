@@ -49,3 +49,60 @@ jobs:
 
       - name: Rechercher les secrets
         run: gitleaks git -v --no-banner --redact --log-opts="HEAD" .
+
+  revue-ia:
+    if: github.event_name == 'pull_request'
+    needs:
+      - qualite
+      - secrets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
+    steps:
+      - name: Ignorer la revue IA si le jeton est vide
+        if: env.COPILOT_GITHUB_TOKEN == ''
+        run: echo "::notice::revue IA sautée : le jeton COPILOT_GITHUB_TOKEN est vide."
+
+      - name: Checkout complet
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurer Node.js
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Installer GitHub Copilot CLI
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        run: npm install -g @github/copilot
+
+      - name: Préparer le prompt avec le diff de la pull request
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          cat .github/prompts/revue-pr.txt > "$RUNNER_TEMP/revue-pr.txt"
+          printf '\n\n--- Diff de la pull request ---\n\n' >> "$RUNNER_TEMP/revue-pr.txt"
+          gh pr diff "$PR_NUMBER" >> "$RUNNER_TEMP/revue-pr.txt"
+
+      - name: Analyser la pull request
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        id: inference
+        uses: actions/ai-inference@v3
+        with:
+          prompt-file: ${{ runner.temp }}/revue-pr.txt
+          model: ''
+
+      - name: Publier la revue en commentaire
+        if: env.COPILOT_GITHUB_TOKEN != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr comment "$PR_NUMBER" --body-file "${{ steps.inference.outputs.response-file }}"
