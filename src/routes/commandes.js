@@ -3,6 +3,13 @@
 const express = require('express');
 const config = require('../config');
 
+/**
+ * Routes /commandes : transformation d'un devis en commande et expédition.
+ * POST /commandes                 corps { devisId }, crée la commande en_preparation
+ * POST /commandes/:id/expedition  passe la commande en expediee et prépare l'annonce au transporteur
+ * @param {import('node:sqlite').DatabaseSync} db Base ouverte.
+ * @returns {import('express').Router}
+ */
 module.exports = function routesCommandes(db) {
   const router = express.Router();
 

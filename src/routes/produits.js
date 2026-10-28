@@ -2,6 +2,13 @@
 
 const express = require('express');
 
+/**
+ * Routes /produits : consultation du catalogue.
+ * GET /produits?categorie=plomberie   liste, filtrable par catégorie
+ * GET /produits/:reference            un produit, 404 s'il n'existe pas
+ * @param {import('node:sqlite').DatabaseSync} db Base ouverte.
+ * @returns {import('express').Router}
+ */
 module.exports = function routesProduits(db) {
   const router = express.Router();
 

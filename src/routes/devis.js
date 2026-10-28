@@ -3,6 +3,14 @@
 const express = require('express');
 const { calculerDevis } = require('../devis/calcul');
 
+/**
+ * Routes /devis : création et consultation des devis.
+ * POST /devis      corps { clientId, lignes: [{ reference, quantite }] }, renvoie 201 et le devis calculé
+ * GET  /devis/:id  un devis enregistré
+ * Erreurs : 400 (lignes invalides, quantité invalide, devis vide), 404 (client ou produit inconnu).
+ * @param {import('node:sqlite').DatabaseSync} db Base ouverte.
+ * @returns {import('express').Router}
+ */
 module.exports = function routesDevis(db) {
   const router = express.Router();
 

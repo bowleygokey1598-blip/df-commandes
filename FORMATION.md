@@ -4,12 +4,18 @@ Fichier de la formation : ne pas modifier.
 
 ## Installation, une fois
 
-### 1. Cloner le dépôt et les vérificateurs, côte à côte
+### 1. Créer votre dépôt depuis le modèle
 
-Dans un terminal ouvert sur le dossier où vous rangez vos projets :
+1. Ouvrez https://github.com/alexxzee/df-commandes, connecté à votre compte GitHub.
+2. Bouton **Use this template**, puis **Create a new repository**. Propriétaire : votre compte. Nom : `df-commandes`. Cochez **Private**, puis **Create repository**.
+3. Dans votre nouveau dépôt : **Settings**, **Collaborators**, **Add people** : ajoutez le compte GitHub du formateur. Il lira votre travail ; vous restez propriétaire du dépôt.
+
+### 2. Cloner votre dépôt et les vérificateurs, côte à côte
+
+Dans votre dépôt, bouton **Code**, onglet **HTTPS** : copiez l’adresse. Puis, dans un terminal ouvert sur le dossier où vous rangez vos projets :
 
 ```bash
-git clone https://github.com/alexxzee/df-commandes
+git clone <adresse de votre dépôt>
 git clone https://github.com/alexxzee/df-verifications
 cd df-commandes
 npm install
@@ -18,9 +24,17 @@ npm test
 
 `npm test` se termine par `ℹ fail 0`. Les deux dossiers doivent être **côte à côte**. Ouvrez ensuite **seulement** `df-commandes` dans VS Code (**Fichier**, **Ouvrir le dossier**) : l’assistant lit tout le dossier ouvert, et `df-verifications` contient les cas attendus des exercices. Les commandes ci-dessous l’appellent, vous n’avez pas à l’ouvrir.
 
-## Votre travail reste sur votre poste
+## Rendre votre travail : un push par jour
 
-Ni branche, ni pull request, ni push : vous travaillez sur `main`, dans votre dossier. Chaque exercice se vérifie par sa commande, et son corrigé vous est remis après l’exercice. En retard, `npm run reprise -- <étape>` pose l’état prêt (la fiche de l’exercice donne l’étape). Seul l’exercice de la CI vous fait créer un dépôt sur votre compte GitHub : sa fiche dit comment.
+Ni branche ni pull request par exercice : vous travaillez sur `main`. En fin de journée, une fois, dans le terminal ouvert sur `df-commandes` :
+
+```bash
+git add -A
+git commit -m "Travail du jour"
+git push
+```
+
+Le formateur lit votre dépôt sur GitHub.
 
 ## Commandes de vérification
 

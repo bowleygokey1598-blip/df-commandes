@@ -3,6 +3,12 @@
 const express = require('express');
 const { exporterCommandes } = require('../legacy/export-commandes');
 
+/**
+ * Routes /export : export comptable.
+ * GET /export/commandes?depuis=AAAA-MM-JJ   CSV séparé par des points-virgules, hors commandes annulées
+ * @param {import('node:sqlite').DatabaseSync} db Base ouverte.
+ * @returns {import('express').Router}
+ */
 module.exports = function routesExport(db) {
   const router = express.Router();
 
