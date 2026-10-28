@@ -64,7 +64,8 @@ jobs:
     steps:
       - name: Ignorer la revue IA si le jeton est vide
         if: env.COPILOT_GITHUB_TOKEN == ''
-        run: echo "::notice::revue IA sautée : le jeton COPILOT_GITHUB_TOKEN est vide."
+        run: |
+          echo "::notice::revue IA sautée : le jeton COPILOT_GITHUB_TOKEN est vide."
 
       - name: Checkout complet
         if: env.COPILOT_GITHUB_TOKEN != ''
